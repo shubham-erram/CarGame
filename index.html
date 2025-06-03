@@ -15,9 +15,21 @@
       margin: 0 auto;
       background: #555;
     }
+    #permissionButton {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      display: none;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
+  <button id="permissionButton">Enable Tilt Controls</button>
   <canvas id="gameCanvas" width="400" height="600"></canvas>
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -41,6 +53,38 @@
     let gameOver = false;
     let tiltX = 0;
 
+    // Permission button for iOS tilt access
+    const permissionButton = document.getElementById('permissionButton');
+
+    function handleOrientation(event) {
+      tiltX = event.gamma || 0;
+    }
+
+    function setupTiltControls() {
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        // iOS 13+ devices require permission
+        permissionButton.style.display = 'block';
+        permissionButton.onclick = () => {
+          DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+              if (permissionState === 'granted') {
+                window.addEventListener('deviceorientation', handleOrientation);
+                permissionButton.style.display = 'none';
+              } else {
+                alert('Permission denied for device orientation.');
+              }
+            })
+            .catch(console.error);
+        };
+      } else {
+        // Non iOS or older devices
+        window.addEventListener('deviceorientation', handleOrientation);
+      }
+    }
+
     function drawRoad() {
       ctx.fillStyle = '#777';
       ctx.fillRect(roadLeft, 0, roadWidth, canvas.height);
@@ -49,7 +93,7 @@
       ctx.setLineDash([20, 20]);
       ctx.beginPath();
       ctx.moveTo(canvas.width / 2, 0);
-      ctx.lineTo(canvas.height);
+      ctx.lineTo(canvas.width / 2, canvas.height);
       ctx.stroke();
     }
 
@@ -79,7 +123,8 @@
       if (Math.abs(tiltX) > 3) {
         playerCar.x += tiltX * sensitivity;
         if (playerCar.x < roadLeft) playerCar.x = roadLeft;
-        if (playerCar.x + carWidth > roadLeft + roadWidth) playerCar.x = roadLeft + roadWidth - carWidth;
+        if (playerCar.x + carWidth > roadLeft + roadWidth)
+          playerCar.x = roadLeft + roadWidth - carWidth;
       }
     }
 
@@ -129,23 +174,21 @@
     }
 
     window.addEventListener('keydown', e => {
-      if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
+      if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         keys[e.key] = true;
       }
     });
 
     window.addEventListener('keyup', e => {
-      if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
+      if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         keys[e.key] = false;
       }
     });
 
-    // Mobile tilt sensor support
-    window.addEventListener('deviceorientation', event => {
-      tiltX = event.gamma || 0;
-    });
+    // Initialize tilt controls with permission handling
+    setupTiltControls();
 
     gameLoop();
   </script>
