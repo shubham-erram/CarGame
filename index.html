@@ -49,7 +49,7 @@
       ctx.setLineDash([20, 20]);
       ctx.beginPath();
       ctx.moveTo(canvas.width / 2, 0);
-      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.lineTo(canvas.height);
       ctx.stroke();
     }
 
@@ -66,6 +66,7 @@
     }
 
     function updatePlayer() {
+      // Keyboard movement
       if (keys['ArrowLeft'] && playerCar.x > roadLeft) {
         playerCar.x -= playerCar.speed;
       }
@@ -73,9 +74,10 @@
         playerCar.x += playerCar.speed;
       }
 
-      // Use tilt from device orientation
-      if (Math.abs(tiltX) > 2) {
-        playerCar.x += tiltX / 5;
+      // Device tilt movement
+      let sensitivity = 0.7; // adjust this for faster/slower response
+      if (Math.abs(tiltX) > 3) {
+        playerCar.x += tiltX * sensitivity;
         if (playerCar.x < roadLeft) playerCar.x = roadLeft;
         if (playerCar.x + carWidth > roadLeft + roadWidth) playerCar.x = roadLeft + roadWidth - carWidth;
       }
@@ -85,10 +87,8 @@
       for (let ob of obstacles) {
         ob.y += 4;
       }
-      // Remove off-screen obstacles
       obstacles = obstacles.filter(ob => ob.y < canvas.height);
 
-      // Add new obstacles
       if (Math.random() < 0.02) {
         const obWidth = 40 + Math.random() * 30;
         const obX = roadLeft + Math.random() * (roadWidth - obWidth);
